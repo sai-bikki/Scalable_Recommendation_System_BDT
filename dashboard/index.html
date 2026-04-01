@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analytics Dashboard — Session Replay & Heatmap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #ffffff;
+            --surface: #f8f8f8;
+            --surface2: #f0f0f0;
+            --border: #e0e0e0;
+            --accent: #333333;
+            --accent2: #333333;
+            --green: #4ade80;
+            --red: #ef4444;
+            --text: #111111;
+            --muted: #666666;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Header ── */
+        header {
+            padding: 1rem 1.5rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+            white-space: nowrap;
+        }
+
+        /* Session input */
+        .session-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .session-bar label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .session-bar input {
+            flex: 1;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem 0.8rem;
+            color: var(--text);
+            font-family: monospace;
+            font-size: 0.8rem;
+            outline: none;
+            min-width: 0;
+        }
+
+        .session-bar input:focus {
+            border-color: var(--accent);
+            box-shadow: inset 0 0 0 1px var(--accent);
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #555555;
+        }
+
+        .btn:active {
+            opacity: 0.9;
+        }
+
+        .btn.secondary {
+            background: white;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn.secondary:hover {
+            background: var(--surface2);
+        }
+
+        .btn.danger {
+            background: var(--red);
+        }
+
+        .btn.danger:hover {
+            background: #dc2626;
+        }
+
+        /* Source URL input */
+        .url-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .url-bar label {
+            font-size: 0.8rem;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .url-bar input {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem 0.8rem;
+            color: var(--text);
+            font-family: monospace;
+            font-size: 0.75rem;
+            outline: none;
+            width: 260px;
+        }
+
+        .url-bar input:focus {
+            border-color: var(--accent);
+            box-shadow: inset 0 0 0 1px var(--accent);
+        }
+
+        /* ── Stats strip ── */
+        .stats-strip {
+            display: flex;
+            gap: 0;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+
+        .stat {
+            padding: 0.7rem 1.5rem;
+            border-right: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.15rem;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        /* ── Tabs ── */
+        .tab-bar {
+            display: flex;
+            gap: 0;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            align-items: center;
+            padding: 0 1rem;
+        }
+
+        .tab {
+            padding: 0.65rem 1.3rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab:hover:not(.active) {
+            color: var(--text);
+        }
+
+        .tab-spacer {
+            flex: 1;
+        }
+
+        /* Replay controls in tab bar */
+        .replay-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0;
+        }
+
+        .replay-controls .speed-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .replay-controls select {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text);
+            font-size: 0.8rem;
+            padding: 0.3rem 0.6rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        #progress-wrap {
+            width: 120px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.08s;
+        }
+
+        #replay-counter {
+            font-size: 0.75rem;
+            color: var(--muted);
+            font-family: monospace;
+        }
+
+        /* ── Main viewport area ── */
+        .viewport-area {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #fafafa;
+            min-height: 0;
+        }
+
+        /* Scale wrapper: centers the iframe at a fixed width */
+        .scale-wrap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            overflow: auto;
+        }
+
+        .page-frame {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        iframe#site-frame {
+            display: block;
+            border: none;
+            background: white;
+        }
+
+        /* Overlay: sits on top of iframe, covers it exactly */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* ── Cursor dot ── */
+        #cursor-dot {
+            position: absolute;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(51, 51, 51, 0.8);
+            box-shadow: 0 0 0 3px rgba(51, 51, 51, 0.2);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            display: none;
+            z-index: 20;
+        }
+
+        #cursor-ripple {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid var(--accent);
+            transform: translate(-50%, -50%) scale(0);
+            pointer-events: none;
+            display: none;
+            z-index: 19;
+            opacity: 0;
+        }
+
+        #cursor-ripple.pop {
+            animation: ripple 0.5s ease-out forwards;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0.6;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+
+        /* ── Heatmap canvas ── */
+        #heatmap-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: none;
+            z-index: 10;
+        }
+
+        /* ── Click dot trail (replay) ── */
+        .click-dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(51, 51, 51, 0.4);
+            border: 1px solid var(--accent);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 15;
+            animation: dot-fade 2s ease-out forwards;
+        }
+
+        @keyframes dot-fade {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.2);
+            }
+        }
+
+        /* ── Empty / loading states ── */
+        .overlay-message {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--muted);
+            font-size: 0.9rem;
+            gap: 0.8rem;
+            z-index: 50;
+        }
+
+        .overlay-message .icon {
+            font-size: 2rem;
+        }
+
+        .overlay-message p {
+            max-width: 320px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .overlay-message .hint {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--accent);
+            background: rgba(51, 51, 51, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0.5rem 1rem;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── Error toast ── */
+        .error-toast {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--red);
+            color: white;
+            padding: 0.65rem 1.4rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.3s;
+            pointer-events: none;
+            z-index: 999;
+            white-space: nowrap;
+        }
+
+        .error-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ── Event log drawer ── */
+        .log-drawer {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 280px;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.25s ease;
+            z-index: 30;
+        }
+
+        .log-drawer.open {
+            transform: translateX(0);
+        }
+
+        .log-drawer-header {
+            padding: 0.8rem 1rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .log-drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.72rem;
+        }
+
+        .log-row {
+            display: grid;
+            grid-template-columns: 28px 55px 50px 50px;
+            gap: 0.3rem;
+            padding: 0.35rem 1rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--muted);
+            transition: background 0.1s;
+            cursor: pointer;
+        }
+
+        .log-row.active {
+            background: rgba(51, 51, 51, 0.1);
+            color: var(--text);
+        }
+
+        .log-row:hover {
+            background: var(--surface2);
+        }
+
+        .log-row .v {
+            color: var(--text);
+        }
+
+        /* ── Events Table View ── */
+        .events-table-view {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg);
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .events-table thead {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .events-table th {
+            text-align: left;
+            padding: 0.65rem 1rem;
+            font-weight: 600;
+            color: var(--muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-right: 1px solid var(--border);
+        }
+
+        .events-table th:last-child {
+            border-right: none;
+        }
+
+        .events-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+
+        .events-table tbody tr:hover {
+            background: var(--surface2);
+        }
+
+        .events-table td {
+            padding: 0.65rem 1rem;
+            color: var(--text);
+            border-right: 1px solid var(--border);
+            font-family: monospace;
+        }
+
+        .events-table td:last-child {
+            border-right: none;
+        }
+
+        .events-table td:nth-child(2),
+        .events-table td:nth-child(3) {
+            text-align: right;
+            color: var(--accent);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ── Header ── -->
+    <header>
+        <div class="logo">Analytics</div>
+
+        <div class="session-bar">
+            <label>Session:</label>
+            <input type="text" id="session-input" placeholder="Paste session_id here…" spellcheck="false" />
+            <button class="btn" id="load-btn">Load</button>
+        </div>
+
+        <div class="url-bar">
+            <label>Page URL:</label>
+            <input type="text" id="page-url" value="http://localhost:3000/demo"
+                placeholder="http://localhost:3000/demo" />
+        </div>
+    </header>
+
+    <!-- ── Stats strip ── -->
+    <div class="stats-strip">
+        <div class="stat">
+            <div class="stat-label">Clicks</div>
+            <div class="stat-value" id="s-clicks">—</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Duration</div>
+            <div class="stat-value" id="s-dur">—</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">Pages</div>
+            <div class="stat-value" id="s-pages">—</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">User</div>
+            <div class="stat-value" id="s-user" style="font-size:0.75rem; padding-top:2px;">—</div>
+        </div>
+    </div>
+
+    <!-- ── Tab bar ── -->
+    <div class="tab-bar">
+        <div class="tab active" id="tab-replay" onclick="switchMode('replay')">Replay</div>
+        <div class="tab" id="tab-heatmap" onclick="switchMode('heatmap')">Heatmap</div>
+        <div class="tab" id="tab-events" onclick="switchMode('events')">Events</div>
+        <div class="tab-spacer"></div>
+
+        <!-- Replay controls -->
+        <div class="replay-controls" id="replay-ctrls">
+            <button class="btn secondary" id="btn-restart" onclick="restartReplay()"
+                style="padding:0.3rem 0.8rem; font-size:0.8rem;">Restart</button>
+            <button class="btn" id="btn-play" onclick="togglePlay()" style="padding:0.3rem 0.9rem; font-size:0.8rem;">Play</button>
+            <div id="progress-wrap">
+                <div id="progress-bar"></div>
+            </div>
+            <span id="replay-counter">0 / 0</span>
+            <span class="speed-label">Speed:</span>
+            <select id="speed-select">
+                <option value="2">0.5×</option>
+                <option value="1" selected>1×</option>
+                <option value="0.5">2×</option>
+                <option value="0.25">4×</option>
+            </select>
+            <button class="btn secondary" id="btn-log" onclick="toggleLog()"
+                style="padding:0.3rem 0.7rem; font-size:0.8rem;" title="Event log">Log</button>
+        </div>
+    </div>
+
+    <!-- ── Viewport ── -->
+    <div class="viewport-area" id="viewport-area">
+        <div class="scale-wrap" id="scale-wrap">
+            <div class="page-frame" id="page-frame">
+                <iframe id="site-frame" scrolling="yes"></iframe>
+                <div id="overlay">
+                    <canvas id="heatmap-canvas"></canvas>
+                    <div id="cursor-dot"></div>
+                    <div id="cursor-ripple"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty state -->
+        <div class="overlay-message" id="empty-msg">
+            <div class="icon">▶</div>
+            <p>Load a session to see clicks replayed on the actual page</p>
+            <div class="hint">Paste a session_id and click Load</div>
+        </div>
+
+        <!-- Loading state -->
+        <div class="overlay-message" id="loading-msg" style="display:none;">
+            <div class="spinner"></div>
+            <p>Loading events…</p>
+        </div>
+
+        <!-- Event log drawer -->
+        <div class="log-drawer" id="log-drawer">
+            <div class="log-drawer-header">
+                Events
+                <button class="btn secondary" onclick="toggleLog()"
+                    style="padding:0.2rem 0.5rem; font-size:0.75rem;">×</button>
+            </div>
+            <div class="log-drawer-body" id="log-body"></div>
+        </div>
+    </div>
+
+    <!-- Events Table View -->
+    <div class="events-table-view" id="events-table-view" style="display: none;">
+        <div style="padding: 1.5rem;">
+            <h2 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--text);">Click Events</h2>
+            <table class="events-table" id="events-table">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>X (px)</th>
+                        <th>Y (px)</th>
+                        <th>Page</th>
+                    </tr>
+                </thead>
+                <tbody id="events-tbody">
+                    <tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--muted);">Load a session to see events</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Error toast -->
+    <div class="error-toast" id="err-toast"></div>
+
+    <script>
+        /* ── Constants ──────────────────────────────────────────────────────────── */
+        const API_BASE = 'http://localhost:3000';
+
+        // The tracker captures clientX/clientY — these are viewport coords.
+        // We replay them at original scale inside our iframe.
+        // The iframe renders the page at its natural width (IFRAME_W).
+        const IFRAME_W = 1280;
+        const IFRAME_H = 900;
+
+        /* ── State ──────────────────────────────────────────────────────────────── */
+        let events = [];
+        let mode = 'replay'; // 'replay' | 'heatmap'
+        let isPlaying = false;
+        let replayIdx = 0;
+        let replayTimer = null;
+        let logOpen = false;
+
+        /* ── DOM refs ────────────────────────────────────────────────────────────── */
+        const frame = document.getElementById('site-frame');
+        const overlay = document.getElementById('overlay');
+        const cursorDot = document.getElementById('cursor-dot');
+        const cursorRipple = document.getElementById('cursor-ripple');
+        const heatCanvas = document.getElementById('heatmap-canvas');
+        const pageFrame = document.getElementById('page-frame');
+        const emptyMsg = document.getElementById('empty-msg');
+        const loadingMsg = document.getElementById('loading-msg');
+
+        /* ── Layout: size iframe + overlay ──────────────────────────────────────── */
+        function layoutViewport() {
+            const area = document.getElementById('viewport-area');
+            const areaW = area.clientWidth;
+            const areaH = area.clientHeight;
+
+            // Scale down if area is smaller than IFRAME_W, but never scale up
+            const scale = Math.min(1, areaW / IFRAME_W);
+            const iw = IFRAME_W;
+            const ih = Math.max(IFRAME_H, Math.round(areaH / scale));
+
+            frame.style.width = iw + 'px';
+            frame.style.height = ih + 'px';
+            overlay.style.width = iw + 'px';
+            overlay.style.height = ih + 'px';
+            pageFrame.style.width = iw + 'px';
+            pageFrame.style.height = ih + 'px';
+
+            pageFrame.style.transform = `scale(${scale})`;
+            pageFrame.style.transformOrigin = 'top left';
+
+            // The scale-wrap needs to be sized to the scaled dimensions so scrollbar works
+            const scaleWrap = document.getElementById('scale-wrap');
+            scaleWrap.style.minWidth = Math.round(iw * scale) + 'px';
+
+            heatCanvas.width = iw;
+            heatCanvas.height = ih;
+        }
+
+        window.addEventListener('resize', layoutViewport);
+        layoutViewport();
+
+        /* ── Load the actual page into iframe ───────────────────────────────────── */
+        function loadPage() {
+            const url = document.getElementById('page-url').value.trim();
+            if (!url) return;
+            frame.src = url;
+        }
+
+        document.getElementById('page-url').addEventListener('keydown', e => {
+            if (e.key === 'Enter') loadPage();
+        });
+
+        // Load default page immediately
+        loadPage();
+
+        /* ── Mode switching ──────────────────────────────────────────────────────── */
+        function switchMode(m) {
+            mode = m;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById('tab-' + m).classList.add('active');
+            document.getElementById('replay-ctrls').style.display = (m === 'replay') ? 'flex' : 'none';
+
+            const viewportArea = document.getElementById('viewport-area');
+            const eventsTable = document.getElementById('events-table-view');
+
+            if (m === 'replay') {
+                heatCanvas.style.display = 'none';
+                cursorDot.style.display = 'none';
+                viewportArea.style.display = 'block';
+                eventsTable.style.display = 'none';
+            } else if (m === 'heatmap') {
+                stopReplay();
+                cursorDot.style.display = 'none';
+                viewportArea.style.display = 'block';
+                eventsTable.style.display = 'none';
+                if (events.length > 0) renderHeatmap();
+            } else if (m === 'events') {
+                viewportArea.style.display = 'none';
+                eventsTable.style.display = 'block';
+                populateEventsTable(events);
+            }
+        }
+
+        /* ── Load session ────────────────────────────────────────────────────────── */
+        document.getElementById('load-btn').addEventListener('click', loadSession);
+        document.getElementById('session-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter') loadSession();
+        });
+
+        async function loadSession() {
+            const sid = document.getElementById('session-input').value.trim();
+            if (!sid) return showError('Please enter a session ID');
+
+            stopReplay();
+            events = [];
+            heatCanvas.style.display = 'none';
+            cursorDot.style.display = 'none';
+            clearDots();
+
+            showLoading(true);
+
+            try {
+                const res = await fetch(`${API_BASE}/event?sessionId=${encodeURIComponent(sid)}`);
+                const data = await res.json();
+
+                if (!res.ok) throw new Error(data.error || 'Server error');
+                if (!data.events || data.events.length === 0) throw new Error('No events found for this session');
+
+                events = data.events;
+                updateStats(events);
+                populateLog(events);
+                emptyMsg.style.display = 'none';
+
+                // Load the page from the first event's page field
+                const firstPage = events[0].page || '/demo';
+                const pageUrl = document.getElementById('page-url').value || `${API_BASE}${firstPage}`;
+                frame.src = pageUrl;
+
+                if (mode === 'heatmap') renderHeatmap();
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        /* ── Stats ───────────────────────────────────────────────────────────────── */
+        function updateStats(evs) {
+            document.getElementById('s-clicks').textContent = evs.length;
+
+            const times = evs.map(e => new Date(e.timestamp).getTime());
+            const dur = Math.round((Math.max(...times) - Math.min(...times)) / 1000);
+            document.getElementById('s-dur').textContent = dur + 's';
+
+            const pages = new Set(evs.map(e => e.page || '/')).size;
+            document.getElementById('s-pages').textContent = pages;
+
+            document.getElementById('s-user').textContent = (evs[0]?.user_id || '—').slice(0, 14) + '…';
+        }
+
+        /* ── Event log ───────────────────────────────────────────────────────────── */
+        function populateLog(evs) {
+            const body = document.getElementById('log-body');
+            body.innerHTML = '';
+            const t0 = new Date(evs[0].timestamp).getTime();
+            evs.forEach((e, i) => {
+                const dt = ((new Date(e.timestamp).getTime() - t0) / 1000).toFixed(2);
+                const row = document.createElement('div');
+                row.className = 'log-row';
+                row.id = `lr-${i}`;
+                // onclick jumps replay to this event
+                row.onclick = () => { stopReplay(); replayIdx = i; highlightLog(i); };
+                row.innerHTML = `<span class="v">${i + 1}</span><span class="v">+${dt}s</span><span class="v">${e.x}</span><span class="v">${e.y}</span>`;
+                body.appendChild(row);
+            });
+        }
+
+        function highlightLog(i) {
+            document.querySelectorAll('.log-row').forEach(r => r.classList.remove('active'));
+            const row = document.getElementById(`lr-${i}`);
+            if (row) { row.classList.add('active'); row.scrollIntoView({ block: 'nearest' }); }
+        }
+
+        function toggleLog() {
+            logOpen = !logOpen;
+            document.getElementById('log-drawer').classList.toggle('open', logOpen);
+        }
+
+        /* ── Events Table ─────────────────────────────────────────────────────────── */
+        function populateEventsTable(evs) {
+            const tbody = document.getElementById('events-tbody');
+            tbody.innerHTML = '';
+
+            if (evs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 2rem; color: var(--muted);">No events found</td></tr>';
+                return;
+            }
+
+            evs.forEach(e => {
+                const row = document.createElement('tr');
+                const time = new Date(e.timestamp).toLocaleString();
+                const x = Math.round(e.x || 0);
+                const y = Math.round(e.y || 0);
+                row.innerHTML = `
+                    <td>${time}</td>
+                    <td>${x}</td>
+                    <td>${y}</td>
+                    <td>${e.page || '/'}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /* ── Replay ───────────────────────────────────────────────────────────────── */
+        function togglePlay() {
+            if (events.length === 0) return;
+            if (isPlaying) stopReplay();
+            else startReplay();
+        }
+
+        function startReplay() {
+            if (replayIdx >= events.length) replayIdx = 0;
+            isPlaying = true;
+            document.getElementById('btn-play').textContent = '⏸ Pause';
+            cursorDot.style.display = 'block';
+            cursorRipple.style.display = 'block';
+            heatCanvas.style.display = 'none';
+            playNext();
+        }
+
+        function stopReplay() {
+            isPlaying = false;
+            clearTimeout(replayTimer);
+            document.getElementById('btn-play').textContent = '▶ Play';
+        }
+
+        function restartReplay() {
+            stopReplay();
+            replayIdx = 0;
+            cursorDot.style.display = 'none';
+            cursorRipple.style.display = 'none';
+            document.getElementById('progress-bar').style.width = '0%';
+            document.getElementById('replay-counter').textContent = `0 / ${events.length}`;
+            clearDots();
+            document.querySelectorAll('.log-row').forEach(r => r.classList.remove('active'));
+        }
+
+        function playNext() {
+            if (!isPlaying || replayIdx >= events.length) {
+                stopReplay();
+                return;
+            }
+
+            const ev = events[replayIdx];
+
+            // Coordinates are already in original viewport space (as tracked)
+            moveCursor(ev.x, ev.y);
+            spawnDot(ev.x, ev.y);
+            highlightLog(replayIdx);
+
+            replayIdx++;
+            const pct = (replayIdx / events.length) * 100;
+            document.getElementById('progress-bar').style.width = pct + '%';
+            document.getElementById('replay-counter').textContent = `${replayIdx} / ${events.length}`;
+
+            // Time to next event
+            let delay = 400;
+            if (replayIdx < events.length) {
+                const rawDelay = new Date(events[replayIdx].timestamp) - new Date(events[replayIdx - 1].timestamp);
+                delay = Math.min(Math.max(rawDelay, 80), 2000);
+            }
+
+            const speed = parseFloat(document.getElementById('speed-select').value);
+            replayTimer = setTimeout(playNext, delay * speed);
+        }
+
+        function moveCursor(x, y) {
+            cursorDot.style.left = x + 'px';
+            cursorDot.style.top = y + 'px';
+            // Ripple animation
+            cursorRipple.style.left = x + 'px';
+            cursorRipple.style.top = y + 'px';
+            cursorRipple.classList.remove('pop');
+            void cursorRipple.offsetWidth; // reflow
+            cursorRipple.classList.add('pop');
+        }
+
+        function spawnDot(x, y) {
+            const dot = document.createElement('div');
+            dot.className = 'click-dot';
+            dot.style.left = x + 'px';
+            dot.style.top = y + 'px';
+            overlay.appendChild(dot);
+            dot.addEventListener('animationend', () => dot.remove());
+        }
+
+        function clearDots() {
+            overlay.querySelectorAll('.click-dot').forEach(d => d.remove());
+        }
+
+        /* ── Heatmap ──────────────────────────────────────────────────────────────── */
+        function renderHeatmap() {
+            heatCanvas.style.display = 'block';
+            const ctx = heatCanvas.getContext('2d');
+            ctx.clearRect(0, 0, heatCanvas.width, heatCanvas.height);
+
+            const BUCKET = 60;
+
+            const buckets = {};
+            events.forEach(e => {
+                const bx = Math.floor(e.x / BUCKET);
+                const by = Math.floor(e.y / BUCKET);
+                const key = `${bx},${by}`;
+                buckets[key] = (buckets[key] || 0) + 1;
+            });
+
+            const maxCount = Math.max(...Object.values(buckets), 1);
+
+            Object.entries(buckets).forEach(([key, count]) => {
+                const [bx, by] = key.split(',').map(Number);
+                const intensity = count / maxCount;
+                const hue = (1 - intensity) * 240;
+                const alpha = 0.25 + intensity * 0.55;
+
+                ctx.fillStyle = `hsla(${hue}, 90%, 58%, ${alpha})`;
+                const rx = bx * BUCKET;
+                const ry = by * BUCKET;
+                ctx.fillRect(rx, ry, BUCKET, BUCKET);
+
+                // Count badge
+                ctx.fillStyle = 'rgba(255,255,255,0.92)';
+                ctx.font = `bold ${Math.round(11 + intensity * 6)}px Inter, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(count, rx + BUCKET / 2, ry + BUCKET / 2);
+            });
+
+            // Individual click dots on heatmap
+            events.forEach(e => {
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                ctx.fill();
+            });
+        }
+
+        /* ── Helpers ─────────────────────────────────────────────────────────────── */
+        function showLoading(show) {
+            loadingMsg.style.display = show ? 'flex' : 'none';
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('err-toast');
+            el.textContent = '⚠ ' + msg;
+            el.classList.add('show');
+            setTimeout(() => el.classList.remove('show'), 3500);
+        }
+
+        // Re-layout after iframe loads (page height may differ)
+        frame.addEventListener('load', () => {
+            try {
+                const h = frame.contentDocument?.body?.scrollHeight;
+                if (h && h > IFRAME_H) {
+                    frame.style.height = h + 'px';
+                    overlay.style.height = h + 'px';
+                    pageFrame.style.height = h + 'px';
+                    heatCanvas.height = h;
+                    if (mode === 'heatmap' && events.length > 0) renderHeatmap();
+                }
+            } catch (e) { /* cross-origin, ignore */ }
+        });
+    </script>
+</body>
+
+</html>

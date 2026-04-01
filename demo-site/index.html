@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShopDemo — Analytics Test Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #ffffff;
+      color: #1a1a1a;
+      min-height: 100vh;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 2rem;
+      background: #f8f8f8;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .logo { font-size: 1.2rem; font-weight: 700; color: #333333; letter-spacing: 0; }
+    .nav-links { display: flex; gap: 1.5rem; }
+    .nav-links a {
+      color: #666666;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #1a1a1a; }
+    .nav-cart {
+      background: #333333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 1.2rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .nav-cart:hover { background: #555555; }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 4rem 2rem 3rem;
+      background: #ffffff;
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 1rem;
+      color: #1a1a1a;
+    }
+    .hero p { color: #666666; font-size: 1rem; margin-bottom: 2rem; }
+    .hero-btn {
+      background: #333333;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.8rem 2rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .hero-btn:hover { background: #555555; }
+
+    /* ── Products ── */
+    .section-title {
+      text-align: center;
+      padding: 2rem 1rem 1.5rem;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 2rem 3rem;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+    }
+    .card:hover {
+      border-color: #999999;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    .card-img {
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .card-body { padding: 1rem; }
+    .card-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; color: #1a1a1a; }
+    .card-price { color: #333333; font-weight: 700; font-size: 1rem; margin-bottom: 0.8rem; }
+    .card-btn {
+      width: 100%;
+      background: #f0f0f0;
+      color: #333333;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .card-btn:hover { background: #333333; border-color: #333333; color: white; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #333333;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── Tracker badge ── */
+    .tracker-badge {
+      position: fixed;
+      bottom: 2rem;
+      left: 2rem;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 0.6rem 1rem;
+      font-size: 0.75rem;
+      color: #666666;
+      font-family: monospace;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav>
+    <div class="logo">ShopDemo</div>
+    <div class="nav-links">
+      <a id="nav-home">Home</a>
+      <a id="nav-products">Products</a>
+      <a id="nav-deals">Deals</a>
+      <a id="nav-about">About</a>
+    </div>
+    <button class="nav-cart" id="cart-btn">Cart (0)</button>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Next-Gen Shopping Experience</h1>
+    <p>Track your clicks. We're watching.</p>
+    <button class="hero-btn" id="hero-cta">Shop Now</button>
+  </section>
+
+  <!-- Products -->
+  <div class="section-title">Featured Products</div>
+  <div class="products" id="products-grid">
+    <!-- Populated by JS -->
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">Added to cart!</div>
+
+  <!-- Tracker badge -->
+  <div class="tracker-badge" id="tracker-badge">Tracking active</div>
+
+  <!-- 🔥 THE TRACKER SCRIPT — this is the only line the client adds 🔥 -->
+  <script src="http://localhost:3000/tracker.js"></script>
+
+  <script>
+    const products = [
+      { emoji: '💻', name: 'Pro Laptop 16"', price: '$1,299' },
+      { emoji: '🎧', name: 'Noise-Cancelling Headphones', price: '$299' },
+      { emoji: '📱', name: 'Flagship Smartphone', price: '$899' },
+      { emoji: '⌚', name: 'Smart Watch Ultra', price: '$449' },
+      { emoji: '🖱️', name: 'Ergonomic Mouse', price: '$79' },
+      { emoji: '⌨️', name: 'Mechanical Keyboard', price: '$149' },
+      { emoji: '📷', name: 'Mirrorless Camera', price: '$1,099' },
+      { emoji: '🎮', name: 'Gaming Controller', price: '$69' },
+    ];
+
+    const grid = document.getElementById('products-grid');
+    let cartCount = 0;
+
+    products.forEach((p, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = `product-${i}`;
+      card.innerHTML = `
+        <div class="card-img">${p.emoji}</div>
+        <div class="card-body">
+          <div class="card-name">${p.name}</div>
+          <div class="card-price">${p.price}</div>
+          <button class="card-btn" id="add-to-cart-${i}">Add to Cart</button>
+        </div>
+      `;
+      grid.appendChild(card);
+
+      card.querySelector(`#add-to-cart-${i}`).addEventListener('click', (e) => {
+        e.stopPropagation();
+        cartCount++;
+        document.getElementById('cart-btn').textContent = `Cart (${cartCount})`;
+        showToast(`${p.name} added!`);
+      });
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    document.getElementById('hero-cta').addEventListener('click', () => {
+      document.getElementById('products-grid').scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Update tracker badge with session info once tracker.js loads
+    setTimeout(() => {
+      const uid = localStorage.getItem('analytics_user_id');
+      const sid = sessionStorage.getItem('analytics_session_id');
+      if (uid && sid) {
+        document.getElementById('tracker-badge').innerHTML =
+          `Tracking<br/>user: ${uid.slice(0, 8)}...<br/>session: ${sid.slice(0, 8)}...`;
+      }
+    }, 500);
+  </script>
+</body>
+</html>
